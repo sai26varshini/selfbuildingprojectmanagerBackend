@@ -31,15 +31,17 @@ def suggest_youtube_videos(project_name, domain, max_results=5):
     if not items:
         return "No relevant YouTube videos found."
 
-    # Build Markdown output
-    md_output = f"# 🎥 YouTube Video Suggestions for {project_name} ({domain})\n\n"
-    for i, item in enumerate(items, 1):
+    videos = []
+    for item in items:
         title = item["snippet"]["title"]
         description = item["snippet"]["description"].replace("\n", " ")
         video_id = item["id"]["videoId"]
         video_url = f"https://www.youtube.com/watch?v={video_id}"
-
-        md_output += f"**{i}. [{title}]({video_url})**\n\n"
-        md_output += f"_{description}_\n\n"
-
-    return md_output
+        channel = item["snippet"].get("channelTitle", "Unknown")
+        videos.append({
+            "title": title,
+            "description": description,
+            "url": video_url,
+            "channel": channel
+        })
+    return videos

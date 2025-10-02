@@ -3,18 +3,54 @@ def create_project_structure(project_name, domain):
     base_path = os.path.join(os.getcwd(), project_name.replace(" ", "_"))
     os.makedirs(base_path, exist_ok=True)
 
-    structure = {
-        "main.py": "",
-        "README.md": f"# {project_name}\n\nDomain: {domain}\n",
-        "requirements.txt": "",
-        "modules": {
-            "__init__.py": "",
-            "logic.py": "",
-        },
-        "utils": {
-            "helpers.py": "",
+
+    # Dynamic structure based on domain
+    if domain.lower() in ["ml", "machine learning", "data science"]:
+        structure = {
+            "main.py": "",
+            "model.py": "",
+            "train.py": "",
+            "README.md": f"# {project_name}\n\nDomain: {domain}\n",
+            "requirements.txt": "",
+            "utils": {
+                "helpers.py": "",
+            }
         }
-    }
+    elif domain.lower() in ["web", "webapp", "web application", "website"]:
+        structure = {
+            "main.py": "",
+            "routes.py": "",
+            "views.py": "",
+            "README.md": f"# {project_name}\n\nDomain: {domain}\n",
+            "requirements.txt": "",
+            "utils": {
+                "helpers.py": "",
+            }
+        }
+    elif domain.lower() in ["ai", "artificial intelligence"]:
+        structure = {
+            "main.py": "",
+            "agent.py": "",
+            "ai_core.py": "",
+            "README.md": f"# {project_name}\n\nDomain: {domain}\n",
+            "requirements.txt": "",
+            "utils": {
+                "helpers.py": "",
+            }
+        }
+    else:
+        structure = {
+            "main.py": "",
+            "README.md": f"# {project_name}\n\nDomain: {domain}\n",
+            "requirements.txt": "",
+            "modules": {
+                "__init__.py": "",
+                "logic.py": "",
+            },
+            "utils": {
+                "helpers.py": "",
+            }
+        }
 
     def create_files(base, struct):
         for name, content in struct.items():

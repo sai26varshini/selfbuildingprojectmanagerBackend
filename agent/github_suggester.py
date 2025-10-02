@@ -10,7 +10,7 @@ def suggest_github_repos(project_name, domain, max_results=5):
     """
     Fetch related GitHub repositories and format them nicely.
     """
-    query = f"{project_name} {domain}"
+    query = f"{project_name}"  # Only use project_name for broader results
     url = "https://api.github.com/search/repositories"
     params = {
         "q": query,
@@ -46,15 +46,4 @@ def suggest_github_repos(project_name, domain, max_results=5):
         if len(repos) >= max_results:
             break
 
-    # Format nicely
-    formatted = "\n[📂] Suggested GitHub Repositories:\n\n"
-    for i, repo in enumerate(repos, start=1):
-        formatted += (
-            f"{i}. **{repo['name']}**\n"
-            f"   🔗 URL: {repo['url']}\n"
-            f"   ⭐ Stars: {repo['stars']}\n"
-            f"   📝 Language: {repo['language']}\n"
-            f"   🕒 Last Updated: {repo['last_updated']}\n\n"
-        )
-
-    return formatted
+    return repos
