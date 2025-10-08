@@ -1,3 +1,9 @@
+# ---------------------------
+# List Project ZIPs for User
+# ---------------------------
+# ---------------------------
+# List Projects for User
+# ---------------------------
 # import os
 # from fastapi import FastAPI, Request
 # from pydantic import BaseModel
@@ -172,6 +178,9 @@ from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
+import os
+from pymongo import MongoClient
+import gridfs
 
 # Import agent modules
 from agent.project_generator import create_project_structure
@@ -180,14 +189,28 @@ from agent.youtube_video_suggester import suggest_youtube_videos
 from agent.research_paper_generator import generate_research_paper_pdf
 from agent.researchpaper_suggestion import suggest_researchpaper_suggestions
 from agent.code_generator import generate_code_snippets
+from fastapi import Body
 
 # Load environment variables
 load_dotenv()
 
-# Initialize FastAPI app
+# MongoDB connection
+MONGODB_URL = os.getenv("MONGODB_URL")
+mongo_client = MongoClient(MONGODB_URL)
+db = mongo_client["project_manager"]
+users_collection = db["users"]
 app = FastAPI(title="AI Project Assistant", version="1.1")
+fs = gridfs.GridFS(db)
 
-# Enable CORS for frontend integration
+# ---------------------------
+# Save Project to GridFS
+# ---------------------------
+
+# Place after app initialization
+
+# ---------------------------
+# Save Project to GridFS
+# ---------------------------
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # ✅ Update this with frontend origin in production
@@ -196,17 +219,100 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ---------------------------
-# Request Models
-# ---------------------------
+
+from fastapi import Body
+
+from fastapi import Query
+
 class ProjectRequest(BaseModel):
     project_name: str
     domain: str
+
+class UserRegisterRequest(BaseModel):
+    username: str
+    password: str
+
+class UserLoginRequest(BaseModel):
+    username: str
+    password: str
 
 
 class ResearchPaperRequest(BaseModel):
     project_name: str
     domain: str
+@app.get("/api/list_projects")
+def list_projects(username: str = Query(...)):
+    # Find all files for user, group by project_name
+    files = db.fs.files.find({"username": username})
+    projects = {}
+    for f in files:
+        pname = f.get("project_name", "Unknown")
+        if pname not in projects:
+            projects[pname] = {
+                "project_name": pname,
+                "file_count": 0,
+                "last_saved": f.get("uploadDate", "")
+            }
+        projects[pname]["file_count"] += 1
+        # Update last_saved if newer
+        if f.get("uploadDate", "") > projects[pname]["last_saved"]:
+            projects[pname]["last_saved"] = f.get("uploadDate", "")
+    return {"success": True, "projects": list(projects.values())}
+
+# @app.post("/api/save_project")
+# def save_project(username: str = Body(...), project_name: str = Body(...)):
+#     print(f"Saving project for user: {username}, project: {project_name}")
+#     base_dir = os.path.join(os.getcwd(), project_name.replace(" ", "_"))
+#     if not os.path.exists(base_dir):
+#         return {"success": False, "message": f"Project '{project_name}' not found"}
+#     saved_files = []
+#     for root, dirs, files in os.walk(base_dir):
+#         for fname in files:
+#             abs_path = os.path.join(root, fname)
+#             rel_path = os.path.relpath(abs_path, base_dir)
+#             with open(abs_path, "rb") as f:
+#                 file_id = fs.put(
+#                     f.read(),
+#                     filename=fname,
+#                     username=username,
+#                     project_name=project_name,
+#                     relative_path=rel_path
+#                 )
+#                 saved_files.append({"filename": fname, "file_id": str(file_id), "relative_path": rel_path})
+#     print(f"Saved {len(saved_files)} files to GridFS")
+#     return {"success": True, "message": "Project saved to MongoDB", "files": saved_files}
+
+# Initialize FastAPI app
+
+
+# Save Project to GridFS
+# @app.post("/api/save_project")
+# def save_project(username: str = Body(...), project_name: str = Body(...)):
+#     base_dir = os.path.join(os.getcwd(), project_name.replace(" ", "_"))
+#     if not os.path.exists(base_dir):
+#         return {"success": False, "message": f"Project '{project_name}' not found"}
+#     saved_files = []
+#     for root, dirs, files in os.walk(base_dir):
+#         for fname in files:
+#             abs_path = os.path.join(root, fname)
+#             rel_path = os.path.relpath(abs_path, base_dir)
+#             with open(abs_path, "rb") as f:
+#                 file_id = fs.put(
+#                     f.read(),
+#                     filename=fname,
+#                     username=username,
+#                     project_name=project_name,
+#                     relative_path=rel_path
+#                 )
+#                 saved_files.append({"filename": fname, "file_id": str(file_id), "relative_path": rel_path})
+#     return {"success": True, "message": "Project saved to MongoDB", "files": saved_files}
+
+# Enable CORS for frontend integration
+
+
+# ---------------------------
+# Request Models
+# ---------------------------
 
 
 # ---------------------------
@@ -337,7 +443,7 @@ def get_related_papers(project_name: str, domain: str, limit: int = 5):
 # ---------------------------
 # Root endpoint
 # ---------------------------
-@app.get("/")
+@app.get("/dashboard")
 def root():
     return {
         "message": "Welcome to AI Project Assistant API!",
@@ -352,3 +458,82 @@ def root():
             "/download_project"
         ]
     }
+
+
+# ---------------------------
+# User Registration
+# ---------------------------
+@app.post("/api/register")
+def register_user(req: UserRegisterRequest):
+    if users_collection.find_one({"username": req.username}):
+        return {"success": False, "message": "Username already exists"}
+    users_collection.insert_one({"username": req.username, "password": req.password})
+    return {"success": True, "message": "User registered successfully"}
+
+# ---------------------------
+# User Login
+# ---------------------------
+@app.post("/api/login")
+def login_user(req: UserLoginRequest):
+    user = users_collection.find_one({"username": req.username, "password": req.password})
+    if user:
+        return {"success": True, "message": "Login successful"}
+    return {"success": False, "message": "Invalid username or password"}
+
+# ---------------------------
+# Save Project ZIP to GridFS
+# ---------------------------
+@app.post("/api/save_project_zip")
+def save_project_zip(username: str = Body(...), project_name: str = Body(...)):
+    import shutil
+    base_dir = os.path.join(os.getcwd(), project_name.replace(" ", "_"))
+    zip_path = f"{base_dir}.zip"
+    if not os.path.exists(base_dir):
+        return {"success": False, "message": f"Project '{project_name}' not found"}
+    shutil.make_archive(base_dir, 'zip', base_dir)
+    with open(zip_path, "rb") as f:
+        file_id = fs.put(
+            f.read(),
+            filename=f"{project_name}.zip",
+            username=username,
+            project_name=project_name,
+            filetype="zip"
+        )
+    os.remove(zip_path)
+    return {"success": True, "message": "Project zip saved to MongoDB", "file_id": str(file_id)}
+
+# ---------------------------
+# Download Project ZIP from GridFS
+# ---------------------------
+from fastapi.responses import StreamingResponse
+@app.get("/api/download_project_zip")
+def download_project_zip(username: str = Query(...), project_name: str = Query(...)):
+    from bson import ObjectId
+    file_obj = db.fs.files.find_one({"username": username, "project_name": project_name, "filetype": "zip"})
+    if not file_obj:
+        return {"success": False, "message": "Zip file not found"}
+    file_id = file_obj["_id"]
+    grid_out = fs.get(file_id)
+    return StreamingResponse(grid_out, media_type="application/zip", headers={"Content-Disposition": f"attachment; filename={project_name}.zip"})
+from fastapi import Query
+
+@app.get("/api/list_project_zips")
+def list_project_zips(username: str = Query(...)):
+    # Find all zip files for user
+    files = db.fs.files.find({"username": username, "filetype": "zip"})
+    zips = []
+    for f in files:
+        zips.append({
+            "project_name": f.get("project_name", "Unknown"),
+            "filename": f.get("filename", ""),
+            "uploadDate": f.get("uploadDate", "")
+        })
+    return {"success": True, "zips": zips}
+# User Logout
+# ---------------------------
+from fastapi import Response
+
+@app.post("/api/logout")
+def logout_user(response: Response):
+    # No session logic, just return success
+    return {"success": True, "message": "Logged out"}

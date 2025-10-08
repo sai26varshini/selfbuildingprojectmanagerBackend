@@ -1,6 +1,6 @@
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import { FaRobot, FaBrain, FaRocket, FaGithub, FaYoutube, FaProjectDiagram, FaMagic, FaStar } from 'react-icons/fa';
+import { FaRobot, FaBrain, FaRocket, FaGithub, FaYoutube, FaProjectDiagram, FaMagic, FaStar, FaFolderOpen } from 'react-icons/fa';
 import { PiPlanetFill } from "react-icons/pi";
 
 export default function HeroSection() {
@@ -13,7 +13,16 @@ export default function HeroSection() {
 
   return (
     <section className="relative flex flex-col items-center justify-center h-[70vh] bg-gradient-to-br from-[#0a0b13] via-[#1a1333] to-[#2a0a2a] text-white overflow-hidden">
-      {/* Animated floating AI/agent icons and planets */}
+      {/* Top right project list icon */}
+      <button
+        onClick={() => router.push("/projectlist")}
+        className="absolute top-6 right-8 z-20 bg-[#18182a]/80 hover:bg-violet-700 text-fuchsia-300 rounded-full p-3 shadow-lg transition-all duration-200 flex items-center justify-center"
+        title="View Project List"
+        style={{ boxShadow: "0 2px 12px 0 rgba(120,0,255,0.18)" }}
+      >
+        <FaFolderOpen className="text-3xl" />
+      </button>
+  {/* Animated floating AI/agent icons and planets */}
       <FaRobot className="absolute left-10 top-10 text-fuchsia-400 opacity-40 text-7xl animate-bounce-slow pointer-events-none" />
       <FaBrain className="absolute right-16 top-20 text-indigo-400 opacity-40 text-6xl animate-spin-slow pointer-events-none" />
       <FaRocket className="absolute left-0 top-1/2 text-pink-400 opacity-40 text-8xl animate-rocket pointer-events-none" />

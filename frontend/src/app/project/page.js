@@ -117,6 +117,7 @@ export default function ProjectPage() {
       setVideos(sanitizeVideos(data.videos || []));
       setPapers(data.papers || []);
 
+
       // STEP 2: stream code
       const codeRes = await fetch(
         `http://localhost:8000/code_snippets/stream?project_name=${encodeURIComponent(projectName)}&domain=${encodeURIComponent(domain)}`
@@ -132,33 +133,31 @@ export default function ProjectPage() {
       const TYPE_DELAY = 1;
 
       async function typeFile(filename, fullCode) {
-        // If you want instant display, just assign and skip loop.
         let existing = fileCodeMap[filename] || "";
         const newPortion = fullCode.slice(existing.length);
         for (let i = 0; i < newPortion.length; i++) {
           existing += newPortion[i];
           fileCodeMap[filename] = existing;
-          // Update current typing preview
           setCurrentFile(filename);
           setTypingCode(existing);
           if (i % 5 === 0) {
-            // Commit to allFiles every few chars for performance
             setAllFiles(Object.entries(fileCodeMap).map(([fn, code]) => ({ filename: fn, code })));
           }
           if (TYPE_DELAY) await new Promise(r => setTimeout(r, TYPE_DELAY));
         }
-        // Final commit
         setAllFiles(Object.entries(fileCodeMap).map(([fn, code]) => ({ filename: fn, code })));
         setTypingCode(existing);
       }
 
+      // Buffer all code events first
+      let allCodeEvents = [];
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
         buffer += decoder.decode(value, { stream: true });
 
         const events = buffer.split("\n\n");
-        buffer = events.pop(); // keep incomplete chunk
+        buffer = events.pop();
 
         for (const evt of events) {
             if (!evt.startsWith("data:")) continue;
@@ -175,27 +174,38 @@ export default function ProjectPage() {
             }
             const { file, code } = parsed;
             if (!file || !code || !VALID_FILENAME.test(file)) continue;
-
-            // Auto expand first time
-            setExpanded(prev => {
-              if (prev.has(file)) return prev;
-              const n = new Set(prev);
-              n.add(file);
-              return n;
-            });
-
-            const h = hashCode(code);
-            const existing = fileStoreRef.current[file];
-            if (!existing || existing.hash !== h) {
-              fileStoreRef.current[file] = { code, hash: h };
-              setAllFiles(
-                Object.entries(fileStoreRef.current).map(([fn, v]) => ({ filename: fn, code: v.code }))
-              );
-            }
-
-            await typeFile(file, code);
+            allCodeEvents.push({ file, code });
         }
       }
+
+      // Write all code to disk (simulate what backend does)
+      for (const { file, code } of allCodeEvents) {
+        fileStoreRef.current[file] = { code, hash: hashCode(code) };
+      }
+      setAllFiles(
+        Object.entries(fileStoreRef.current).map(([fn, v]) => ({ filename: fn, code: v.code }))
+      );
+
+      // === CALL SAVE PROJECT API HERE ===
+      // try {
+      //   const username = localStorage.getItem("username");
+      //   if (username && projectName) {
+      //     await fetch("http://localhost:8000/api/save_project", {
+      //       method: "POST",
+      //       headers: { "Content-Type": "application/json" },
+      //       body: JSON.stringify({ username, project_name: projectName })
+      //     });
+      //   }
+      // } catch (err) {
+      //   console.error("Failed to save project:", err);
+      // }
+      // === END SAVE ===
+
+      // Now start typing animation for each file
+      for (const { file, code } of allCodeEvents) {
+        await typeFile(file, code);
+      }
+
     } catch (err) {
       console.error(err);
       setError(err.message || "Generation failed");
@@ -502,16 +512,44 @@ export default function ProjectPage() {
                     <ResearchPaperForm projectName={projectName} domain={domain} />
                   </div>
                   {allFiles.length > 0 && (
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        const url = `http://localhost:8000/download_project?project_name=${encodeURIComponent(projectName)}`;
-                        window.open(url, "_blank");
-                      }}
-                      className="mt-6 bg-violet-700 hover:bg-violet-800 text-white px-5 py-2 rounded-lg flex items-center shadow transition-colors"
-                    >
-                      <FaDownload className="mr-2" /> Download Project
-                    </button>
+                    <>
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          const url = `http://localhost:8000/download_project?project_name=${encodeURIComponent(projectName)}`;
+                          window.open(url, "_blank");
+                        }}
+                        className="mt-6 bg-violet-700 hover:bg-violet-800 text-white px-5 py-2 rounded-lg flex items-center shadow transition-colors"
+                      >
+                        <FaDownload className="mr-2" /> Download Project
+                      </button>
+                      <button
+                        onClick={async (e) => {
+                          e.preventDefault();
+                          const username = localStorage.getItem("username") || "";
+                          if (!username) {
+                            alert("Please login to save your project zip.");
+                            return;
+                          }
+                          const res = await fetch("http://localhost:8000/api/save_project_zip", {
+                            method: "POST",
+                            headers: {
+                              "Content-Type": "application/json"
+                            },
+                            body: JSON.stringify({ username, project_name: projectName })
+                          });
+                          const data = await res.json();
+                          if (data.success) {
+                            alert("Project ZIP saved to database!");
+                          } else {
+                            alert(data.message || "Failed to save ZIP.");
+                          }
+                        }}
+                        className="mt-4 bg-fuchsia-700 hover:bg-fuchsia-800 text-white px-5 py-2 rounded-lg flex items-center shadow transition-colors"
+                      >
+                        <FaDownload className="mr-2" /> Save ZIP to Database
+                      </button>
+                    </>
                   )}
                 </div>
               )}

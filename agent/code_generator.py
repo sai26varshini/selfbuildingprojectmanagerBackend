@@ -50,17 +50,30 @@ FRONTEND_FILES = [
     "frontend/src/styles.css"
 ]
 
+# Java Spring Boot files
+SPRINGBOOT_FILES = [
+    "src/main/java/com/example/Application.java",
+    "src/main/java/com/example/controller/MainController.java",
+    "src/main/java/com/example/service/MainService.java",
+    "src/main/java/com/example/repository/MainRepository.java",
+    "src/main/resources/application.properties",
+    "pom.xml"
+]
+
+
 ALWAYS = ["README.md"]
 
 # ---------------- Roles ---------------- #
 
 FILE_ROLES = {
+    # Python FastAPI
     "main.py": "Create FastAPI app (app = FastAPI()). Include router from routes.py. No models or DB engine definitions.",
     "db.py": "Define SQLAlchemy engine, SessionLocal, Base. No FastAPI app.",
     "models.py": "SQLAlchemy ORM models only (import Base from db).",
     "schemas.py": "Pydantic schemas referencing models. No app, no DB.",
     "routes.py": "Create APIRouter with CRUD endpoints for models. No FastAPI(). Import from db, models, schemas.",
     "utils.py": "Pure utility helpers (logging, common functions).",
+    # ML/AI
     "ml/model.py": "Define ML model class or pipeline construction logic.",
     "ml/train.py": "Training script using data_loader to train model and save artifacts.",
     "ml/evaluate.py": "Load trained model, compute metrics.",
@@ -70,6 +83,7 @@ FILE_ROLES = {
     "agent/llm_client.py": "Wrapper for LLM API calls (use placeholders / environment vars).",
     "agent/tools.py": "Tool functions (search, file ops).",
     "services/service_layer.py": "Business/service layer functions isolating DB operations.",
+    # React frontend
     "frontend/package.json": "Minimal React + dependencies config (scripts: dev/build).",
     "frontend/public/index.html": "HTML root with div#root.",
     "frontend/src/index.jsx": "React entry point createRoot + render <App/>.",
@@ -78,8 +92,17 @@ FILE_ROLES = {
     "frontend/src/components/Footer.jsx": "Reusable footer component.",
     "frontend/src/api/client.js": "Fetch wrapper (baseURL, GET/POST helpers).",
     "frontend/src/styles.css": "Basic global styles.",
+    # Java Spring Boot
+    "src/main/java/com/example/Application.java": "Spring Boot main class with @SpringBootApplication annotation.",
+    "src/main/java/com/example/controller/MainController.java": "Spring REST controller with sample endpoints.",
+    "src/main/java/com/example/service/MainService.java": "Service class for business logic.",
+    "src/main/java/com/example/repository/MainRepository.java": "Repository interface for data access.",
+    "src/main/java/com/example/model/MainModel.java": "Model/entity class with JPA annotations.",
+    "src/main/resources/application.properties": "Spring Boot application configuration properties.",
+    # Docs
     "README.md": "Project overview, setup (backend + frontend), run instructions."
 }
+
 
 # ---------------- Utilities ---------------- #
 
@@ -92,23 +115,28 @@ def safe_name(name: str) -> str:
 
 def hash_short(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
-
 def pick_files(domain: str) -> List[str]:
     d = (domain or "").lower()
-    files = BASE_BACKEND[:]
-    if any(k in d for k in ["ml", "machine", "data"]):
-        files += ML_EXTRA
-    elif any(k in d for k in ["ai", "agent", "llm"]):
-        files += AI_EXTRA
+    if any(k in d for k in ["spring", "java"]):
+        files = SPRINGBOOT_FILES[:]
+        files += FRONTEND_FILES
+        files += ALWAYS
     else:
-        files += GENERIC_EXTRA
-    files += FRONTEND_FILES
-    files += ALWAYS
+        files = BASE_BACKEND[:]
+        if any(k in d for k in ["ml", "machine", "data"]):
+            files += ML_EXTRA
+        elif any(k in d for k in ["ai", "agent", "llm"]):
+            files += AI_EXTRA
+        else:
+            files += GENERIC_EXTRA
+        files += FRONTEND_FILES
+        files += ALWAYS
     # Ensure uniqueness preserving order
     seen, ordered = set(), []
     for f in files:
         if f not in seen:
             ordered.append(f); seen.add(f)
+    return ordered
     return ordered
 
 def strip_fences(text: str) -> str:
