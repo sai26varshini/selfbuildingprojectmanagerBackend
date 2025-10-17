@@ -259,57 +259,6 @@ def list_projects(username: str = Query(...)):
             projects[pname]["last_saved"] = f.get("uploadDate", "")
     return {"success": True, "projects": list(projects.values())}
 
-# @app.post("/api/save_project")
-# def save_project(username: str = Body(...), project_name: str = Body(...)):
-#     print(f"Saving project for user: {username}, project: {project_name}")
-#     base_dir = os.path.join(os.getcwd(), project_name.replace(" ", "_"))
-#     if not os.path.exists(base_dir):
-#         return {"success": False, "message": f"Project '{project_name}' not found"}
-#     saved_files = []
-#     for root, dirs, files in os.walk(base_dir):
-#         for fname in files:
-#             abs_path = os.path.join(root, fname)
-#             rel_path = os.path.relpath(abs_path, base_dir)
-#             with open(abs_path, "rb") as f:
-#                 file_id = fs.put(
-#                     f.read(),
-#                     filename=fname,
-#                     username=username,
-#                     project_name=project_name,
-#                     relative_path=rel_path
-#                 )
-#                 saved_files.append({"filename": fname, "file_id": str(file_id), "relative_path": rel_path})
-#     print(f"Saved {len(saved_files)} files to GridFS")
-#     return {"success": True, "message": "Project saved to MongoDB", "files": saved_files}
-
-# Initialize FastAPI app
-
-
-# Save Project to GridFS
-# @app.post("/api/save_project")
-# def save_project(username: str = Body(...), project_name: str = Body(...)):
-#     base_dir = os.path.join(os.getcwd(), project_name.replace(" ", "_"))
-#     if not os.path.exists(base_dir):
-#         return {"success": False, "message": f"Project '{project_name}' not found"}
-#     saved_files = []
-#     for root, dirs, files in os.walk(base_dir):
-#         for fname in files:
-#             abs_path = os.path.join(root, fname)
-#             rel_path = os.path.relpath(abs_path, base_dir)
-#             with open(abs_path, "rb") as f:
-#                 file_id = fs.put(
-#                     f.read(),
-#                     filename=fname,
-#                     username=username,
-#                     project_name=project_name,
-#                     relative_path=rel_path
-#                 )
-#                 saved_files.append({"filename": fname, "file_id": str(file_id), "relative_path": rel_path})
-#     return {"success": True, "message": "Project saved to MongoDB", "files": saved_files}
-
-# Enable CORS for frontend integration
-
-
 # ---------------------------
 # Request Models
 # ---------------------------
