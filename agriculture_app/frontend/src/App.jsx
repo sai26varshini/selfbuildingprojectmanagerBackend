@@ -6,15 +6,13 @@ function App() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchCrops = async () => {
-      try {
-        const response = await axios.get('http://localhost:8000/crops');
+    axios.get('http://localhost:8000/crops')
+      .then(response => {
         setCrops(response.data);
-      } catch (error) {
+      })
+      .catch(error => {
         setError(error.message);
-      }
-    };
-    fetchCrops();
+      });
   }, []);
 
   return (
@@ -24,8 +22,8 @@ function App() {
         <p style={{ color: 'red' }}>{error}</p>
       ) : (
         <ul>
-          {crops.map((crop) => (
-            <li key={crop.id}>{crop.name}</li>
+          {crops.map((crop, index) => (
+            <li key={index}>{crop.name}</li>
           ))}
         </ul>
       )}

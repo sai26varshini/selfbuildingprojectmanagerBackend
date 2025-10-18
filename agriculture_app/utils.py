@@ -1,43 +1,29 @@
 # utils.py
 
 import logging
-from typing import Dict, List
+from typing import Dict, Any
 from fastapi import HTTPException
-from sqlalchemy.orm import Session
-from models import Crop
+from pydantic import BaseModel
+from db import SessionLocal
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def get_crops(db: Session) -> List[Crop]:
-    """Retrieve all crops from the database."""
-    return db.query(Crop).all()
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
-def get_crop(db: Session, crop_id: int) -> Crop:
-    """Retrieve a crop by ID from the database."""
-    return db.query(Crop).filter(Crop.id == crop_id).first()
-
-def create_crop(db: Session, crop: Crop) -> Crop:
-    """Create a new crop in the database."""
-    db.add(crop)
-    db.commit()
-    db.refresh(crop)
-    return crop
-
-def update_crop(db: Session, crop_id: int, crop: Crop) -> Crop:
-    """Update an existing crop in the database."""
-    db.query(Crop).filter(Crop.id == crop_id).update(crop)
-    db.commit()
-    return db.query(Crop).filter(Crop.id == crop_id).first()
-
-def delete_crop(db: Session, crop_id: int) -> None:
-    """Delete a crop from the database."""
-    db.query(Crop).filter(Crop.id == crop_id).delete()
-    db.commit()
-
-def validate_crop(crop: Dict) -> None:
-    """Validate a crop dictionary."""
-    required_fields = ["id", "name", "description"]
-    if not all(field in crop for field in required_fields):
+def validate_crop_data(data: Dict[str, Any]) -> CropSchema:
+    try:
+        return CropSchema(**data)
+    except Exception as e:
+        logger.error(f"Invalid crop data: {e}")
         raise HTTPException(status_code=400, detail="Invalid crop data")
+
+def validate_crop_id(id: int) -> None:
+    if id <= 0:
+        raise HTTPException(status_code=400, detail="Invalid crop ID")

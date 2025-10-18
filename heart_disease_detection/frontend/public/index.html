@@ -1,0 +1,120 @@
+index.html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Heart Disease Detection</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="root"></div>
+    <script src="index.js"></script>
+</body>
+</html>
+
+styles.css
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f0f0f0;
+}
+
+#root {
+    max-width: 800px;
+    margin: 40px auto;
+    padding: 20px;
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+index.js
+import React from 'react';
+import ReactDOM from 'react-dom';
+import App from './App';
+
+ReactDOM.render(
+    <React.StrictMode>
+        <App />
+    </React.StrictMode>,
+    document.getElementById('root')
+);
+
+App.js
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+
+function App() {
+    const [patients, setPatients] = useState([]);
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        const fetchPatients = async () => {
+            setLoading(true);
+            try {
+                const response = await axios.get('/api/patients');
+                setPatients(response.data);
+            } catch (error) {
+                console.error(error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchPatients();
+    }, []);
+
+    if (loading) {
+        return <p>Loading...</p>;
+    }
+
+    return (
+        <div>
+            <h1>Patients</h1>
+            <ul>
+                {patients.map((patient) => (
+                    <li key={patient.id}>
+                        <p>Age: {patient.age}</p>
+                        <p>Sex: {patient.sex}</p>
+                    </li>
+                ))}
+            </ul>
+        </div>
+    );
+}
+
+export default App;
+
+package.json
+{
+  "name": "heart_disease_detection",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@testing-library/jest-dom": "^5.16.4",
+    "axios": "^0.24.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-scripts": "5.0.1"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test"
+  },
+  "eslintConfig": {
+    "extends": ["react-app", "react-app/jest"]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}

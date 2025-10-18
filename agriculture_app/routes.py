@@ -6,41 +6,41 @@ from schemas import CropSchema
 
 router = APIRouter()
 
-@router.get("/crops/")
-def read_crops(db: Session = Depends(get_db)):
+@router.get("/crops/", response_model=list[CropSchema])
+async def read_crops(db: Session = Depends(get_db)):
     return db.query(Crop).all()
 
-@router.get("/crops/{crop_id}")
-def read_crop(crop_id: int, db: Session = Depends(get_db)):
+@router.get("/crops/{crop_id}", response_model=CropSchema)
+async def read_crop(crop_id: int, db: Session = Depends(get_db)):
     crop = db.query(Crop).filter(Crop.id == crop_id).first()
     if crop is None:
         raise HTTPException(status_code=404, detail="Crop not found")
     return crop
 
-@router.post("/crops/")
-def create_crop(crop: CropSchema, db: Session = Depends(get_db)):
-    db_crop = Crop(name=crop.name, description=crop.description)
+@router.post("/crops/", response_model=CropSchema)
+async def create_crop(crop: CropSchema, db: Session = Depends(get_db)):
+    db_crop = Crop(**crop.dict())
     db.add(db_crop)
     db.commit()
     db.refresh(db_crop)
     return db_crop
 
-@router.put("/crops/{crop_id}")
-def update_crop(crop_id: int, crop: CropSchema, db: Session = Depends(get_db)):
+@router.put("/crops/{crop_id}", response_model=CropSchema)
+async def update_crop(crop_id: int, crop: CropSchema, db: Session = Depends(get_db)):
     db_crop = db.query(Crop).filter(Crop.id == crop_id).first()
     if db_crop is None:
         raise HTTPException(status_code=404, detail="Crop not found")
-    db_crop.name = crop.name
-    db_crop.description = crop.description
+    for attr, value in crop.dict().items():
+        setattr(db_crop, attr, value)
     db.commit()
     db.refresh(db_crop)
     return db_crop
 
 @router.delete("/crops/{crop_id}")
-def delete_crop(crop_id: int, db: Session = Depends(get_db)):
+async def delete_crop(crop_id: int, db: Session = Depends(get_db)):
     db_crop = db.query(Crop).filter(Crop.id == crop_id).first()
     if db_crop is None:
         raise HTTPException(status_code=404, detail="Crop not found")
     db.delete(db_crop)
     db.commit()
-    return {"message": "Crop deleted"}
+    return {"message": "Crop deleted successfully"}

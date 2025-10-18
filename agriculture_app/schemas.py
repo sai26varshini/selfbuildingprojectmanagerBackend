@@ -9,7 +9,3 @@ class CropSchema(BaseModel):
 class CropCreateSchema(BaseModel):
     name: str
     description: str
-
-class CropUpdateSchema(BaseModel):
-    name: str
-    description: str

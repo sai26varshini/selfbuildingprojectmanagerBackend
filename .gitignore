@@ -50,3 +50,16 @@ venv/
 .idea/
 *.bak
 *.tmp
+# Ignore environment variables
+.env
+
+# Ignore Python cache and virtual environment folders
+__pycache__/
+*.pyc
+venv/
+.env/
+.env.local
+
+# Ignore IDE/editor settings
+.vscode/
+.idea/

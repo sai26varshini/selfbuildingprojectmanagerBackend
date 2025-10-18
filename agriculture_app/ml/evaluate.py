@@ -1,63 +1,42 @@
 # ml/evaluate.py
 
-from typing import Dict, List
-from fastapi import HTTPException
-from sqlalchemy.orm import Session
-from models import Crop
-from ml.model import load_model
+import logging
+from typing import Dict, Any
+from pydantic import BaseModel
+from db import SessionLocal
+from ml.model import Pipeline
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 
-def evaluate_model(db: Session, model: object, test_data: List[Crop], labels: List[int]) -> Dict:
-    """
-    Evaluate the performance of the model on the test data.
-    
-    Args:
-    - db: Database session.
-    - model: Trained model.
-    - test_data: Test data.
-    - labels: True labels.
-    
-    Returns:
-    - A dictionary containing the evaluation metrics.
-    """
-    predictions = model.predict(test_data)
-    accuracy = accuracy_score(labels, predictions)
-    report = classification_report(labels, predictions)
-    matrix = confusion_matrix(labels, predictions)
-    
-    return {
-        "accuracy": accuracy,
-        "classification_report": report,
-        "confusion_matrix": matrix
-    }
+logging.basicConfig(level=logging.INFO)
 
-def load_and_evaluate_model(db: Session) -> Dict:
-    """
-    Load the trained model and evaluate its performance on the test data.
-    
-    Args:
-    - db: Database session.
-    
-    Returns:
-    - A dictionary containing the evaluation metrics.
-    """
-    model = load_model()
-    test_data = db.query(Crop).all()
-    labels = [crop.id for crop in test_data]
-    
-    return evaluate_model(db, model, test_data, labels)
+class EvaluationMetrics(BaseModel):
+    accuracy: float
+    classification_report: Dict[str, Any]
+    confusion_matrix: Dict[str, Any]
 
-def main():
-    db = SessionLocal()
-    metrics = load_and_evaluate_model(db)
-    db.close()
-    
-    print("Evaluation Metrics:")
-    print("Accuracy:", metrics["accuracy"])
-    print("Classification Report:")
-    print(metrics["classification_report"])
-    print("Confusion Matrix:")
-    print(metrics["confusion_matrix"])
+def evaluate_model(model: Pipeline, X_test: Any, y_test: Any, session: SessionLocal) -> EvaluationMetrics:
+    y_pred = model.predict(X_test)
+    accuracy = accuracy_score(y_test, y_pred)
+    report = classification_report(y_test, y_pred)
+    matrix = confusion_matrix(y_test, y_pred).dict()
+    return EvaluationMetrics(accuracy=accuracy, classification_report=report, confusion_matrix=matrix)
+
+def load_trained_model(session: SessionLocal) -> Pipeline:
+    # Assuming the trained model is saved in the database
+    # This is a placeholder, you should replace it with your actual logic
+    # For example, you can load the model from a file or database
+    model = Pipeline()
+    # Load the model from the database
+    # model = session.query(Pipeline).first()
+    return model
+
+def main() -> None:
+    session = SessionLocal()
+    model = load_trained_model(session)
+    # Assuming you have the test data loaded
+    X_test, y_test = load_data()
+    metrics = evaluate_model(model, X_test, y_test, session)
+    logging.info(metrics.json())
 
 if __name__ == "__main__":
     main()
