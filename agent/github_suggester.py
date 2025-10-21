@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 # Load env
 load_dotenv()
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
-
+ 
 def suggest_github_repos(project_name, domain, max_results=5):
     """
     Fetch related GitHub repositories and format them nicely.
